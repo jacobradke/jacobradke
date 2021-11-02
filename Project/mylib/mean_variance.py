@@ -15,13 +15,13 @@ def mean_variance(ticker_lst, start, end):
     port_vol = []
     port_weights = []
     num_assets = len(df.columns)
-    num_portfolios = 10000
+    num_portfolios = 20000
     individual_rets = df.resample('Y').last().pct_change().mean()
     for port in range(num_portfolios):
         weights = np.random.random(num_assets)
         weights = weights/np.sum(weights)
         port_weights.append(weights)
-        returns = np.dot(weights, individual_rets)
+        returns = np.dot(weights, individual_rets) *100
         port_returns.append(returns)
         var = cov.mul(weights,axis = 0).mul(weights,axis=1).sum().sum()
         sd = np.sqrt(var)
