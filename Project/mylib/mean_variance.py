@@ -4,7 +4,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 import datetime 
 end = datetime.datetime.today()
-def mean_variance(ticker_lst, start, end):
+def mean_variance(ticker_lst, num_ports, start, end):
     ticker_dict = {}
     for ticker in ticker_lst:
         ticker_dict[ticker] = web.DataReader(ticker, "yahoo", start, end)["Adj Close"]
@@ -15,7 +15,7 @@ def mean_variance(ticker_lst, start, end):
     port_vol = []
     port_weights = []
     num_assets = len(df.columns)
-    num_portfolios = 20000
+    num_portfolios = num_ports
     individual_rets = df.resample('Y').last().pct_change().mean()
     for port in range(num_portfolios):
         weights = np.random.random(num_assets)
