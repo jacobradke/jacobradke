@@ -4,6 +4,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 import datetime 
 import statsmodels.api as sm
+import quandl as ql
 end = datetime.datetime.today()
 start = datetime.datetime(2011,1,1)
 
@@ -12,9 +13,21 @@ def mean_variance(ticker_lst, num_ports, start, end, benchmark, rf):
     for ticker in ticker_lst:
         ticker_dict[ticker] = web.DataReader(ticker, "yahoo", start, end)["Adj Close"]
     df = pd.DataFrame(ticker_dict)
-    pct_change = df.pct_change()*100
+    pct_change = df.pct_change().fillna(0)*100
+    market = web.DataReader(benchmark, "yahoo", start = start, end = end)["Adj Close"]
+    market_change = pd.DataFrame(market.pct_change()*100).fillna(0)
+    def information_ratio(returns, benchmark, days = 1):
+        active_returns = returns - benchmark
+        tracking_error = active_returns.std() * np.sqrt(days)
+        info_ratio = active_returns.mean() / tracking_error
+        return info_ratio
+    individual_info_ratios = {}
+    for stock in pct_change:
+        individual_info_ratios[stock] = information_ratio(returns = pct_change[stock], benchmark = market_change["Adj Close"])*10
+    individual_info_ratios = pd.DataFrame(individual_info_ratios, index = [0]).T
     cov = pct_change.cov()
     port_returns = []
+    port_info = []
     port_vol = []
     port_weights = []
     num_assets = len(df.columns)
@@ -25,17 +38,20 @@ def mean_variance(ticker_lst, num_ports, start, end, benchmark, rf):
         weights = weights/np.sum(weights)
         port_weights.append(weights)
         returns = np.dot(weights, individual_rets) *100
+        information_ratio = np.dot(weights, individual_info_ratios)
+        port_info.append(float(information_ratio))
         port_returns.append(returns)
         var = cov.mul(weights,axis = 0).mul(weights,axis=1).sum().sum()
         sd = np.sqrt(var)
         ann_sd = sd*np.sqrt(252)
         port_vol.append(ann_sd)
-    data = {"Returns": port_returns, "Volatility": port_vol}
+    data = {"Returns": port_returns, "Volatility": port_vol, "Information Ratio": port_info}
     for counter, symbol in enumerate(df.columns.to_list()):
         data[symbol+" Weight"]=[w[counter] for w in port_weights]
     portfolios = pd.DataFrame(data)
     pct_change["Market"] = web.DataReader(benchmark, "yahoo", start = start, end = end)["Adj Close"].pct_change()*100
     pct_change = pct_change.dropna()
+    
     beta = {}
     for key in pct_change:
         Y = pct_change[key]
@@ -45,7 +61,7 @@ def mean_variance(ticker_lst, num_ports, start, end, benchmark, rf):
         beta[key + " Beta"] = results.params
     beta = pd.DataFrame(beta)
     beta = beta.drop("Market Beta", axis = 1).T
-    ports = portfolios.drop(["Returns", "Volatility"], axis = 1).T
+    ports = portfolios.drop(["Returns", "Volatility", "Information Ratio"], axis = 1).T
     port_beta_dct = {}
     for port in ports:
         port_beta_dct[port] = ports[port].values*beta["Market"].values
@@ -57,13 +73,18 @@ def mean_variance(ticker_lst, num_ports, start, end, benchmark, rf):
     third_col = portfolios.pop(col_name)
     portfolios.insert(2, col_name, third_col)
     market = web.DataReader(benchmark, "yahoo", start = start, end = end)["Adj Close"]
-    market = pd.DataFrame(market)
-    market_mean = market.resample("M").last().pct_change().mean()*100
-    jensens_alpha = portfolios["Returns"]-(rf + portfolios["Portfolio Beta"]*(market_mean["Adj Close"]-rf))
+    market_mean = market.resample("A").last().pct_change().mean()*100
+    jensens_alpha = portfolios["Returns"]-(rf + portfolios["Portfolio Beta"]*(market_mean-rf))
     portfolios["Jensen's Alpha"] = jensens_alpha
     jen_col = "Jensen's Alpha"
     fourth_col = portfolios.pop(jen_col)
     portfolios.insert(3, jen_col, fourth_col)
+    
+    portfolios["Sharpe Ratio"] = (portfolios["Returns"]-rf)/portfolios["Volatility"]
+    shr_col = "Sharpe Ratio"
+    col = portfolios.pop(shr_col)
+    portfolios.insert(2, shr_col, col)
+    
     return portfolios
 
 def efficient_frontier(portfolios, benchmark, s=15, color = "k",alpha = 0.5, marker = 'o', figsize = (24,18), rf = 2, start = start, end = end):
@@ -96,6 +117,12 @@ def efficient_frontier(portfolios, benchmark, s=15, color = "k",alpha = 0.5, mar
                 color = "purple", 
                 marker = "*",
                 s = 500)
+    optimal_info_ratio = portfolios.iloc[(portfolios["Information Ratio"]).idxmax()]
+    plt.scatter(optimal_info_ratio[1],
+                optimal_info_ratio[0], 
+                color = "black", 
+                marker = "*", 
+                s = 500)
     plt.title("Efficient Frontier")
     plt.xlabel("Risk")
     plt.ylabel("Expected Returns");
@@ -114,3 +141,33 @@ def optimal_jensens_alpha(portfolios):
     optimal = portfolios.iloc[(portfolios["Jensen's Alpha"]).idxmax()]
     optimal = pd.DataFrame(optimal).T
     return optimal
+
+def optimal_information_ratio(portfolios):
+    optimal = portfolios.iloc[(portfolios["Information Ratio"]).idxmax()]
+    optimal = pd.DataFrame(optimal).T
+    return optimal
+
+def get_yield_curve(figsize):
+    data = ql.get("USTREASURY/YIELD")
+    today = data.iloc[-1,:]
+    month_ago = data.iloc[-21,:]
+    three_month_ago = data.iloc[-63,:]
+    one_year_ago = data.iloc[-252,:]
+    df = pd.concat([today, 
+                    month_ago, 
+                    three_month_ago, 
+                    one_year_ago], 
+                   axis=1)
+    df.columns = ['Today', 
+                  'Month Ago', 
+                  '3-Months Ago', 
+                  "Year Ago"]
+
+    df.plot(style={'Today': 'ro-', 
+                   'Month Ago': 'yo--', 
+                   '3-Months Ago': 'bx--', 
+                   'Year Ago': 'go--'},
+            title='Treasury Yield Curve, %', 
+            figsize = figsize, 
+            grid = True, 
+            linewidth = 3);
