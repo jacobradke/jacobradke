@@ -169,6 +169,69 @@ def effects_on_returns(portfolios, figsize, color, alpha, s):
         plt.show()
         plt.close();
 
+def effects_on_sharpe_ratio(portfolios, figsize, color, alpha, s):
+    for key in portfolios: 
+        x = portfolios[key]
+        y = portfolios["Sharpe Ratio"]
+        m, b = np.polyfit(x, y, 1)
+        portfolios.plot.scatter(x = key,
+                                y ="Sharpe Ratio",
+                                marker = "o",
+                                color = color,
+                                s = s,
+                                alpha = alpha,
+                                grid = True,
+                                figsize = figsize)
+        plt.plot(x, 
+                 m*x + b, 
+                 linewidth = 5)
+        plt.title(key+" Effect on Portfolio Sharpe Ratio")
+        print(key+": ", m)
+        plt.show()
+        plt.close();        
+
+def effects_on_jensens_alpha(portfolios, figsize, color, alpha, s):
+    for key in portfolios: 
+        x = portfolios[key]
+        y = portfolios["Jensen's Alpha"]
+        m, b = np.polyfit(x, y, 1)
+        portfolios.plot.scatter(x = key,
+                                y ="Jensen's Alpha",
+                                marker = "o",
+                                color = color,
+                                s = s,
+                                alpha = alpha,
+                                grid = True,
+                                figsize = figsize)
+        plt.plot(x, 
+                 m*x + b, 
+                 linewidth = 5)
+        plt.title(key+" Effect on Portfolio Jensen's Alpha")
+        print(key+": ", m)
+        plt.show()
+        plt.close();          
+        
+def effects_on_info_ratio(portfolios, figsize, color, alpha, s):
+    for key in portfolios: 
+        x = portfolios[key]
+        y = portfolios["Information Ratio"]
+        m, b = np.polyfit(x, y, 1)
+        portfolios.plot.scatter(x = key,
+                                y ="Information Ratio",
+                                marker = "o",
+                                color = color,
+                                s = s,
+                                alpha = alpha,
+                                grid = True,
+                                figsize = figsize)
+        plt.plot(x, 
+                 m*x + b, 
+                 linewidth = 5)
+        plt.title(key+" Effect on Portfolio Information Ratio")
+        print(key+": ", m)
+        plt.show()
+        plt.close();          
+        
 def optimal_sharpe_portfolio(portfolios, rf = 0.02):
     optimal_risky_port = portfolios.iloc[((portfolios["Returns"]-rf)/portfolios["Volatility"]).idxmax()]
     sharpe = pd.DataFrame(optimal_risky_port).T
