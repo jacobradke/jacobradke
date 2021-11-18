@@ -127,6 +127,48 @@ def efficient_frontier(portfolios, benchmark, s=15, color = "k",alpha = 0.5, mar
     plt.xlabel("Risk")
     plt.ylabel("Expected Returns");
 
+def effects_on_volatility(portfolios, figsize, color, alpha, s):
+    for key in portfolios: 
+        x = portfolios[key]
+        y = portfolios["Volatility"]
+        m, b = np.polyfit(x, y, 1)
+        portfolios.plot.scatter(x=key,
+                                y="Volatility",
+                                marker="o",
+                                color = color,
+                                s=s,
+                                alpha = alpha,
+                                grid = True,
+                                figsize = figsize)
+        plt.plot(x, 
+                 m*x + b, 
+                 linewidth = 5)
+        plt.title(key+" Effect on Portfolio Volatility")
+        print(key+": ", m)
+        plt.show()
+        plt.close();
+
+def effects_on_returns(portfolios, figsize, color, alpha, s):
+    for key in portfolios: 
+        x = portfolios[key]
+        y = portfolios["Returns"]
+        m, b = np.polyfit(x, y, 1)
+        portfolios.plot.scatter(x = key,
+                                y ="Returns",
+                                marker = "o",
+                                color = color,
+                                s = s,
+                                alpha = alpha,
+                                grid = True,
+                                figsize = figsize)
+        plt.plot(x, 
+                 m*x + b, 
+                 linewidth = 5)
+        plt.title(key+" Effect on Portfolio Returns")
+        print(key+": ", m)
+        plt.show()
+        plt.close();
+
 def optimal_sharpe_portfolio(portfolios, rf = 0.02):
     optimal_risky_port = portfolios.iloc[((portfolios["Returns"]-rf)/portfolios["Volatility"]).idxmax()]
     sharpe = pd.DataFrame(optimal_risky_port).T
