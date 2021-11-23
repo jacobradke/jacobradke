@@ -5,6 +5,7 @@ import matplotlib.pyplot as plt
 import datetime 
 import statsmodels.api as sm
 import quandl as ql
+ql.ApiConfig.api_key = "9jyqYSaJcKMarzYxyWox"
 end = datetime.datetime.today()
 start = datetime.datetime(2011,1,1)
 
@@ -276,3 +277,31 @@ def get_yield_curve(figsize):
             figsize = figsize, 
             grid = True, 
             linewidth = 3);
+
+def ols(data, x_vars, y_var):
+    reg_vars = x_vars + y_var
+    reg_data = data[reg_vars].dropna()
+    y = reg_data[y_var]
+    x = reg_data[x_vars]
+    x["Intercept"] = 1
+    results = sm.OLS(y,x).fit()
+    return results.summary()
+
+def get_retail_trade_data(ticker, start, end):
+    data = ql.get_table("NDAQ/RTAT10", paginate=True)
+    data = data.set_index("ticker")
+    data = data.loc[ticker]
+    data = data.reset_index()
+    data = data.nsmallest(len(data.index), "date")
+    data = data.set_index("date")
+    data = pd.DataFrame(data)
+    all_data = pd.DataFrame(web.DataReader(ticker, 
+                                           "yahoo", 
+                                           start = start, 
+                                           end = end)["Adj Close"])
+    all_data["% Change"] = all_data.pct_change()
+    all_data = all_data.dropna()
+    all_data["Retail Activity"] = data["activity"]
+    all_data = all_data.dropna()
+
+    return all_data
