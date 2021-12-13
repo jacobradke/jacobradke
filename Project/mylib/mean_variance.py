@@ -24,7 +24,8 @@ def mean_variance(ticker_lst, num_ports, start, end, benchmark, rf):
         return info_ratio
     individual_info_ratios = {}
     for stock in pct_change:
-        individual_info_ratios[stock] = information_ratio(returns = pct_change[stock], benchmark = market_change["Adj Close"])*10
+        individual_info_ratios[stock] = information_ratio(returns = pct_change[
+            stock], benchmark = market_change["Adj Close"])*10
     individual_info_ratios = pd.DataFrame(individual_info_ratios, index = [0]).T
     cov = pct_change.cov()
     port_returns = []
@@ -141,6 +142,7 @@ def effects_on_volatility(portfolios, figsize, color, alpha, s):
                                 alpha = alpha,
                                 grid = True,
                                 figsize = figsize)
+        
         plt.plot(x, 
                  m*x + b, 
                  linewidth = 5)
@@ -183,6 +185,7 @@ def effects_on_sharpe_ratio(portfolios, figsize, color, alpha, s):
                                 alpha = alpha,
                                 grid = True,
                                 figsize = figsize)
+       
         plt.plot(x, 
                  m*x + b, 
                  linewidth = 5)
@@ -204,6 +207,7 @@ def effects_on_jensens_alpha(portfolios, figsize, color, alpha, s):
                                 alpha = alpha,
                                 grid = True,
                                 figsize = figsize)
+       
         plt.plot(x, 
                  m*x + b, 
                  linewidth = 5)
@@ -225,6 +229,7 @@ def effects_on_info_ratio(portfolios, figsize, color, alpha, s):
                                 alpha = alpha,
                                 grid = True,
                                 figsize = figsize)
+      
         plt.plot(x, 
                  m*x + b, 
                  linewidth = 5)
@@ -302,6 +307,7 @@ def get_retail_trade_data(ticker, start, end):
     all_data["% Change"] = all_data.pct_change()
     all_data = all_data.dropna()
     all_data["Retail Activity"] = data["activity"]
+    all_data["Sentiment"] = data["sentiment"]
     all_data = all_data.dropna()
 
     return all_data
