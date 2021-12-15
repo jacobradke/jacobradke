@@ -51,6 +51,7 @@ def mean_variance(ticker_lst, num_ports, start, end, benchmark, rf):
     for counter, symbol in enumerate(df.columns.to_list()):
         data[symbol+" Weight"]=[w[counter] for w in port_weights]
     portfolios = pd.DataFrame(data)
+    # market_change from above could improve efficiency here
     pct_change["Market"] = web.DataReader(benchmark, "yahoo", start = start, end = end)["Adj Close"].pct_change()*100
     pct_change = pct_change.dropna()
     
